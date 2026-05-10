@@ -69,6 +69,13 @@ export function useWebSocket(url: string | null): UseWebSocketReturn {
       if (!mountedRef.current) return;
       try {
         const parsed = JSON.parse(event.data as string) as WsMessage;
+        // Respond to server pings with a pong to keep the connection alive
+        if ((parsed as { type: string }).type === "ping") {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "pong" }));
+          }
+          return;
+        }
         setLastMessage(parsed);
       } catch {
         // Ignore malformed messages

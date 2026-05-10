@@ -67,7 +67,7 @@ export function EtaControl({ onSetEta, currentEta }: EtaControlProps) {
             onChange={handleChange}
             placeholder="e.g. 20"
             aria-label="Arrival ETA in minutes"
-            className="w-full rounded-xl border border-base-border bg-base-DEFAULT px-3 py-2 text-sm text-white placeholder-white/30 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
+            className="w-full rounded-xl border border-base-border bg-base-surface px-3 py-2 text-sm text-white placeholder-white/30 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
           />
           <span className="shrink-0 text-xs text-white/40">min</span>
         </div>

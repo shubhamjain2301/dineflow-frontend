@@ -123,7 +123,7 @@ function NameEntryPrompt({ onSubmit }: NameEntryProps) {
               placeholder="e.g. Alex"
               maxLength={50}
               autoFocus
-              className="w-full bg-base/60 border border-base-border rounded-xl px-4 py-2.5 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/60"
+              className="w-full bg-base-surface border border-base-border rounded-xl px-4 py-2.5 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/60"
               aria-describedby={error ? "join-name-error" : undefined}
             />
             {error && (
@@ -288,14 +288,15 @@ export default function SessionPage() {
       !hasEverSynced.current &&
       !sessionNotFoundHandled.current
     ) {
-      // Give a short grace period in case the WS is just reconnecting
+      // Give a grace period in case the WS is just reconnecting.
+      // Increased to 8s to account for reconnect backoff + server grace period.
       const timer = setTimeout(() => {
         if (!hasEverSynced.current && !sessionNotFoundHandled.current) {
           sessionNotFoundHandled.current = true;
           toast.error("Session has ended or does not exist");
           router.push("/");
         }
-      }, 3000);
+      }, 8000);
       return () => clearTimeout(timer);
     }
   }, [connectionStatus, ready, router]);
@@ -349,6 +350,36 @@ export default function SessionPage() {
       setIsConfirming(false);
     }
   }, [isConfirming, sessionId, restaurantId, etaMinutes, cart]);
+
+  // ── Pending item from restaurant page ────────────────────────────────────
+  // When the user adds an item on the restaurant page and gets redirected here,
+  // the item is stored in sessionStorage. We consume it once the WS is connected.
+  const pendingItemConsumed = useRef(false);
+
+  useEffect(() => {
+    if (connectionStatus !== "connected" || pendingItemConsumed.current) return;
+    if (!participantId || !displayName) return;
+
+    try {
+      const raw = sessionStorage.getItem("dineflow_pending_item");
+      if (!raw) return;
+      const item = JSON.parse(raw) as MenuItem;
+      sessionStorage.removeItem("dineflow_pending_item");
+      pendingItemConsumed.current = true;
+
+      addItem({
+        menu_item_id: item.id,
+        menu_item_name: item.name,
+        price: item.price,
+        participant_id: participantId,
+        display_name: displayName,
+        quantity: 1,
+        note: "",
+      });
+    } catch {
+      // sessionStorage unavailable or malformed — ignore
+    }
+  }, [connectionStatus, participantId, displayName, addItem]);
 
   // ── Add item to cart ─────────────────────────────────────────────────────
   const handleAddToCart = useCallback(

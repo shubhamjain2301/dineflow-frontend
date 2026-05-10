@@ -71,7 +71,7 @@ export function CartItem({
                   max={99}
                   value={item.quantity}
                   onChange={handleQuantityChange}
-                  className="w-14 rounded-lg border border-base-border bg-base-DEFAULT px-2 py-1 text-center text-sm text-white focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
+                  className="w-14 rounded-lg border border-base-border bg-base-surface px-2 py-1 text-center text-sm text-white focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
                   aria-label={`Quantity for ${item.menu_item_name}`}
                 />
               </div>
@@ -83,7 +83,7 @@ export function CartItem({
                 onChange={handleNoteChange}
                 placeholder="Special request…"
                 maxLength={200}
-                className="flex-1 rounded-lg border border-base-border bg-base-DEFAULT px-2 py-1 text-sm text-white placeholder-white/30 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
+                className="flex-1 rounded-lg border border-base-border bg-base-surface px-2 py-1 text-sm text-white placeholder-white/30 focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
                 aria-label={`Preference note for ${item.menu_item_name}`}
               />
 
