@@ -19,7 +19,7 @@ const cardVariants = {
   },
 };
 
-export default function RestaurantCard({ restaurant, index }: RestaurantCardProps) {
+export default function RestaurantCard({ restaurant, index: _index }: RestaurantCardProps) {
   const router = useRouter();
 
   const handleClick = () => {
