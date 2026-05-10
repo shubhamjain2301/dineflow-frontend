@@ -33,8 +33,8 @@ export default function RestaurantGrid({ restaurants }: RestaurantGridProps) {
       initial="hidden"
       animate="visible"
     >
-      {restaurants.map((restaurant, index) => (
-        <RestaurantCard key={restaurant.id} restaurant={restaurant} index={index} />
+      {restaurants.map((restaurant) => (
+        <RestaurantCard key={restaurant.id} restaurant={restaurant} />
       ))}
     </motion.div>
   );

@@ -7,7 +7,6 @@ import type { Restaurant } from "@/lib/types";
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
-  index: number;
 }
 
 const cardVariants = {
@@ -19,7 +18,7 @@ const cardVariants = {
   },
 };
 
-export default function RestaurantCard({ restaurant, index: _index }: RestaurantCardProps) {
+export default function RestaurantCard({ restaurant }: RestaurantCardProps) {
   const router = useRouter();
 
   const handleClick = () => {
