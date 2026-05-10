@@ -7,23 +7,28 @@ interface UseWebSocketReturn {
   status: ConnectionStatus;
   send: (message: object) => void;
   lastMessage: WsMessage | null;
+  /** Close code from the last WebSocket close event, e.g. 4004 = session not found */
+  lastCloseCode: number | null;
 }
 
 const MIN_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30_000;
 
+/** Close codes that mean "don't reconnect — the session is gone" */
+const FATAL_CLOSE_CODES = new Set([4004]);
+
 export function useWebSocket(url: string | null): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [lastMessage, setLastMessage] = useState<WsMessage | null>(null);
+  const [lastCloseCode, setLastCloseCode] = useState<number | null>(null);
 
-  // Use refs to avoid stale closures in event handlers
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backoffRef = useRef<number>(MIN_BACKOFF_MS);
-  // Track whether the hook is still mounted so we don't reconnect after unmount
   const mountedRef = useRef<boolean>(true);
-  // Keep a stable ref to the current url so the connect closure always sees the latest value
   const urlRef = useRef<string | null>(url);
+  // Prevent reconnect after a fatal close
+  const fatalRef = useRef<boolean>(false);
 
   useEffect(() => {
     urlRef.current = url;
@@ -37,8 +42,8 @@ export function useWebSocket(url: string | null): UseWebSocketReturn {
   }, []);
 
   const connect = useCallback(() => {
-    // Guard against SSR
     if (typeof window === "undefined") return;
+    if (fatalRef.current) return;
 
     const currentUrl = urlRef.current;
     if (!currentUrl) return;
@@ -61,7 +66,6 @@ export function useWebSocket(url: string | null): UseWebSocketReturn {
     ws.onopen = () => {
       if (!mountedRef.current) return;
       setStatus("connected");
-      // Reset backoff on successful connection
       backoffRef.current = MIN_BACKOFF_MS;
     };
 
@@ -69,7 +73,7 @@ export function useWebSocket(url: string | null): UseWebSocketReturn {
       if (!mountedRef.current) return;
       try {
         const parsed = JSON.parse(event.data as string) as WsMessage;
-        // Respond to server pings with a pong to keep the connection alive
+        // Respond to server pings to keep the connection alive
         if ((parsed as { type: string }).type === "ping") {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: "pong" }));
@@ -82,44 +86,42 @@ export function useWebSocket(url: string | null): UseWebSocketReturn {
       }
     };
 
-    const scheduleReconnect = () => {
+    ws.onclose = (event: CloseEvent) => {
       if (!mountedRef.current) return;
       setStatus("disconnected");
+      setLastCloseCode(event.code);
+
+      // Fatal close — don't reconnect
+      if (FATAL_CLOSE_CODES.has(event.code)) {
+        fatalRef.current = true;
+        return;
+      }
 
       clearReconnectTimer();
       const delay = backoffRef.current;
-      // Advance backoff: double it, capped at MAX_BACKOFF_MS
       backoffRef.current = Math.min(backoffRef.current * 2, MAX_BACKOFF_MS);
 
       reconnectTimerRef.current = setTimeout(() => {
-        if (mountedRef.current && urlRef.current) {
+        if (mountedRef.current && urlRef.current && !fatalRef.current) {
           connect();
         }
       }, delay);
     };
 
-    ws.onclose = () => {
-      scheduleReconnect();
-    };
-
     ws.onerror = () => {
-      // onerror is always followed by onclose, so we let onclose handle reconnect
-      // but we still mark as disconnected immediately for UI feedback
       if (!mountedRef.current) return;
       setStatus("disconnected");
     };
   }, [clearReconnectTimer]);
 
-  // Connect / disconnect when url changes
   useEffect(() => {
     mountedRef.current = true;
+    fatalRef.current = false;
 
     if (url) {
-      // Reset backoff whenever we get a new URL
       backoffRef.current = MIN_BACKOFF_MS;
       connect();
     } else {
-      // No URL — close any open socket and stay disconnected
       clearReconnectTimer();
       if (wsRef.current) {
         wsRef.current.onopen = null;
@@ -153,5 +155,5 @@ export function useWebSocket(url: string | null): UseWebSocketReturn {
     ws.send(JSON.stringify(message));
   }, []);
 
-  return { status, send, lastMessage };
+  return { status, send, lastMessage, lastCloseCode };
 }

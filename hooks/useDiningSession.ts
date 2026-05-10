@@ -17,6 +17,7 @@ interface DiningSessionState {
   cart: CartItem[];
   etaMinutes: number | null;
   connectionStatus: "connecting" | "connected" | "disconnected";
+  lastCloseCode: number | null;
   addItem: (item: Omit<CartItem, "id">) => void;
   updateItem: (id: string, patch: Partial<Pick<CartItem, "quantity" | "note">>) => void;
   removeItem: (id: string) => void;
@@ -50,7 +51,7 @@ export function useDiningSession(
       ? buildSessionWsUrl(sessionId)
       : null;
 
-  const { status, send, lastMessage } = useWebSocket(wsUrl);
+  const { status, send, lastMessage, lastCloseCode } = useWebSocket(wsUrl);
 
   // Session state
   const [restaurantId, setRestaurantId] = useState<string>("");
@@ -180,6 +181,7 @@ export function useDiningSession(
     cart,
     etaMinutes,
     connectionStatus: status,
+    lastCloseCode,
     addItem,
     updateItem,
     removeItem,

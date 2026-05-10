@@ -40,6 +40,7 @@ interface SharedCartProps {
   onUpdate: (id: string, patch: { quantity?: number; note?: string }) => void;
   onRemove: (id: string) => void;
   onConfirm: () => void;
+  isSolo?: boolean;
 }
 
 export function SharedCart({
@@ -49,6 +50,7 @@ export function SharedCart({
   onUpdate,
   onRemove,
   onConfirm,
+  isSolo = false,
 }: SharedCartProps) {
   const [emptyError, setEmptyError] = useState(false);
 
@@ -105,7 +107,7 @@ export function SharedCart({
       {/* Header */}
       <div className="flex items-center gap-2">
         <ShoppingCart className="h-5 w-5 text-accent-blue" aria-hidden="true" />
-        <h2 className="text-base font-semibold text-white">Shared Cart</h2>
+        <h2 className="text-base font-semibold text-white">{isSolo ? "Your Cart" : "Shared Cart"}</h2>
       </div>
 
       {/* Participant groups */}
@@ -180,7 +182,7 @@ export function SharedCart({
 
       {/* Subtotal row */}
       <div className="flex items-center justify-between rounded-xl border border-base-border bg-base-surface/40 px-4 py-3">
-        <span className="text-sm font-medium text-white/60">Group Subtotal</span>
+        <span className="text-sm font-medium text-white/60">{isSolo ? "Subtotal" : "Group Subtotal"}</span>
         <span className="text-base font-bold text-accent-blue">
           <AnimatedSubtotal value={subtotal} />
         </span>
@@ -207,10 +209,10 @@ export function SharedCart({
       <button
         onClick={handleConfirm}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-blue px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-blue/20 transition-all hover:bg-accent-blue/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-base-DEFAULT active:scale-[0.98]"
-        aria-label="Confirm group order"
+        aria-label={isSolo ? "Confirm order" : "Confirm group order"}
       >
         <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-        Confirm Group Order
+        {isSolo ? "Confirm Order" : "Confirm Group Order"}
       </button>
     </div>
   );

@@ -13,6 +13,7 @@ interface StoredSession {
   display_name: string;
   participant_id: string;
   restaurant_id: string;
+  is_solo?: boolean;
 }
 
 interface RestaurantPageClientProps {
@@ -118,6 +119,7 @@ export default function RestaurantPageClient({
         display_name: soloName,
         participant_id,
         restaurant_id: restaurant.id,
+        is_solo: true,
       };
 
       storeSession(session);
@@ -159,6 +161,7 @@ export default function RestaurantPageClient({
         display_name: trimmedName,
         participant_id,
         restaurant_id: restaurant.id,
+        is_solo: false,
       };
 
       storeSession(session);
