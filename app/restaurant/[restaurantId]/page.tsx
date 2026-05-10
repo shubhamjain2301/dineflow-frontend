@@ -25,13 +25,13 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
     restaurant = restaurantData ?? undefined;
     menuItems = items;
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[RestaurantPage] fetch failed for ${restaurantId}:`, message);
     // Only treat genuine 404s as not-found — let other errors surface
-    const message = err instanceof Error ? err.message : "";
     if (message.includes("404") || message.toLowerCase().includes("not found")) {
       notFound();
     }
-    // For network/server errors, show a fallback rather than a blank 404
-    // The page will render with empty state
+    // For network/server errors, continue with empty menu
     menuItems = [];
   }
 

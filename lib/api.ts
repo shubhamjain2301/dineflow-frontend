@@ -7,10 +7,11 @@ import type {
 
 // Server-side: use BACKEND_URL (not exposed to browser, used by Vercel SSR)
 // Client-side: use NEXT_PUBLIC_API_URL (baked into the browser bundle)
+// Hardcoded fallback ensures SSR never fails due to missing env vars
 const API_URL =
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8000";
+  "https://dineflow-backend-yshu.onrender.com";
 
 /**
  * Shared fetch helper. Throws an Error with the backend `detail` message
