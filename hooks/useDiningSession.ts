@@ -24,15 +24,10 @@ interface DiningSessionState {
   setEta: (minutes: number) => void;
 }
 
-/**
- * Generates a UUID v4 string using the browser's crypto API when available,
- * falling back to a Math.random-based implementation for SSR safety.
- */
 function generateUUID(): string {
   if (typeof window !== "undefined" && window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
   }
-  // Fallback: RFC 4122 v4 UUID
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -45,7 +40,6 @@ export function useDiningSession(
 ): DiningSessionState {
   const { sessionId, participantId, displayName } = options;
 
-  // Derive the WebSocket URL — guard against SSR and empty sessionId
   const wsUrl =
     typeof window !== "undefined" && sessionId
       ? buildSessionWsUrl(sessionId)
@@ -63,7 +57,20 @@ export function useDiningSession(
   // Track whether we've sent the join message for this connection
   const joinedRef = useRef<boolean>(false);
 
-  // Send join message when the WebSocket connects
+  // Queue of WS messages to flush once connected + joined
+  const pendingMessagesRef = useRef<object[]>([]);
+
+  // Flush queued messages after join
+  const flushPending = useCallback(() => {
+    const msgs = pendingMessagesRef.current;
+    if (msgs.length === 0) return;
+    pendingMessagesRef.current = [];
+    for (const msg of msgs) {
+      send(msg);
+    }
+  }, [send]);
+
+  // Send join message when connected, then flush any queued messages
   useEffect(() => {
     if (status === "connected" && !joinedRef.current) {
       joinedRef.current = true;
@@ -74,15 +81,16 @@ export function useDiningSession(
           display_name: displayName,
         },
       });
+      // Flush queued messages after a short delay to ensure join is processed first
+      setTimeout(flushPending, 100);
     }
 
-    // Reset join flag when disconnected so we re-join on reconnect
     if (status === "disconnected") {
       joinedRef.current = false;
     }
-  }, [status, participantId, displayName, send]);
+  }, [status, participantId, displayName, send, flushPending]);
 
-  // Parse incoming sync messages and update local state
+  // Parse incoming sync messages — authoritative state from server
   useEffect(() => {
     if (!lastMessage) return;
 
@@ -96,17 +104,16 @@ export function useDiningSession(
     }
   }, [lastMessage]);
 
-  // addItem: optimistic update + WS message
+  // addItem: optimistic update + send (or queue if not yet connected)
   const addItem = useCallback(
     (item: Omit<CartItem, "id">) => {
       const id = generateUUID();
       const newItem: CartItem = { ...item, id };
 
-      // Optimistic update
+      // Always optimistically update local state immediately
       setCart((prev) => [...prev, newItem]);
 
-      // Send WS message
-      send({
+      const msg = {
         type: "add_item",
         payload: {
           id,
@@ -118,57 +125,43 @@ export function useDiningSession(
           quantity: item.quantity,
           note: item.note,
         },
-      });
+      };
+
+      if (joinedRef.current) {
+        send(msg);
+      } else {
+        // Queue to send once connected + joined
+        pendingMessagesRef.current.push(msg);
+      }
     },
     [send]
   );
 
-  // updateItem: optimistic update + WS message
+  // updateItem: optimistic update + send
   const updateItem = useCallback(
     (id: string, patch: Partial<Pick<CartItem, "quantity" | "note">>) => {
-      // Optimistic update
       setCart((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
       );
-
-      // Send WS message
-      send({
-        type: "update_item",
-        payload: {
-          id,
-          ...patch,
-        },
-      });
+      send({ type: "update_item", payload: { id, ...patch } });
     },
     [send]
   );
 
-  // removeItem: optimistic update + WS message
+  // removeItem: optimistic update + send
   const removeItem = useCallback(
     (id: string) => {
-      // Optimistic update
       setCart((prev) => prev.filter((item) => item.id !== id));
-
-      // Send WS message
-      send({
-        type: "remove_item",
-        payload: { id },
-      });
+      send({ type: "remove_item", payload: { id } });
     },
     [send]
   );
 
-  // setEta: optimistic update + WS message
+  // setEta: optimistic update + send
   const setEta = useCallback(
     (minutes: number) => {
-      // Optimistic update
       setEtaMinutes(minutes);
-
-      // Send WS message
-      send({
-        type: "set_eta",
-        payload: { eta_minutes: minutes },
-      });
+      send({ type: "set_eta", payload: { eta_minutes: minutes } });
     },
     [send]
   );

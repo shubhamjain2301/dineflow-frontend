@@ -322,10 +322,11 @@ export default function SessionPage() {
   }, [isConfirming, sessionId, restaurantId, etaMinutes, cart]);
 
   // ── Pending item from restaurant page ────────────────────────────────────
+  // Consume immediately on mount — addItem queues internally if WS not ready yet.
   const pendingItemConsumed = useRef(false);
 
   useEffect(() => {
-    if (connectionStatus !== "connected" || pendingItemConsumed.current) return;
+    if (pendingItemConsumed.current) return;
     if (!participantId || !displayName) return;
 
     try {
@@ -347,7 +348,8 @@ export default function SessionPage() {
     } catch {
       // sessionStorage unavailable or malformed — ignore
     }
-  }, [connectionStatus, participantId, displayName, addItem]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantId, displayName]);
 
   // ── Add item to cart ─────────────────────────────────────────────────────
   const handleAddToCart = useCallback(
