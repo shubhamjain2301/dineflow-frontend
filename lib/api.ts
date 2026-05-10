@@ -5,13 +5,17 @@ import type {
   OrderStatus,
 } from "./types";
 
-// Server-side: use BACKEND_URL (not exposed to browser, used by Vercel SSR)
-// Client-side: use NEXT_PUBLIC_API_URL (baked into the browser bundle)
-// Hardcoded fallback ensures SSR never fails due to missing env vars
-const API_URL =
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://dineflow-backend-yshu.onrender.com";
+const PRODUCTION_API_URL = "https://dineflow-backend-yshu.onrender.com";
+
+// Never fall back to localhost in production.
+// NEXT_PUBLIC_API_URL is only used if it's set and not pointing to localhost.
+const API_URL = (() => {
+  const pub = process.env.NEXT_PUBLIC_API_URL;
+  if (pub && !pub.includes("localhost")) return pub.replace(/\/$/, "");
+  const srv = process.env.BACKEND_URL;
+  if (srv && !srv.includes("localhost")) return srv.replace(/\/$/, "");
+  return PRODUCTION_API_URL;
+})();
 
 /**
  * Shared fetch helper. Throws an Error with the backend `detail` message

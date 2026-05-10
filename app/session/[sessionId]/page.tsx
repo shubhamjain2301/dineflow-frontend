@@ -234,10 +234,18 @@ export default function SessionPage() {
         session_id: sessionId,
         display_name: name,
         participant_id: participantId,
+        // Build the invite link from the current URL so joiners can share it too
+        invite_link: typeof window !== "undefined"
+          ? window.location.href
+          : undefined,
         is_solo: false,
       };
       writeStoredSession(session);
       setDisplayName(name);
+      // Also set localInviteLink so it shows immediately
+      if (typeof window !== "undefined") {
+        setLocalInviteLink(window.location.href);
+      }
       setIsSolo(false);
       setNeedsName(false);
     },
@@ -504,10 +512,19 @@ export default function SessionPage() {
 
           {/* Right column */}
           <div className="flex flex-col gap-6 flex-1 min-w-0">
-            {menuItems.length > 0 && (
+            {menuItems.length > 0 ? (
               <section className="rounded-2xl border border-base-border bg-base-surface/60 p-4 backdrop-blur-md shadow-lg shadow-black/30">
                 <h2 className="mb-4 text-sm font-semibold text-white/70 uppercase tracking-wide">Menu</h2>
                 <MenuSection items={menuItems} onAddToCart={handleAddToCart} />
+              </section>
+            ) : (
+              <section className="rounded-2xl border border-base-border bg-base-surface/60 p-4 backdrop-blur-md shadow-lg shadow-black/30 flex items-center justify-center py-10">
+                <div className="flex flex-col items-center gap-3 text-white/40">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
+                  <p className="text-sm">
+                    {connectionStatus === "disconnected" ? "Connecting to session…" : "Loading menu…"}
+                  </p>
+                </div>
               </section>
             )}
 
