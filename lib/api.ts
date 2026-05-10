@@ -71,13 +71,17 @@ export async function getRestaurants(): Promise<Restaurant[]> {
 }
 
 /**
- * GET /api/restaurants → find by id
- * Fetches all restaurants and returns the one matching the given ID,
- * or null if not found.
+ * GET /api/restaurants/{restaurantId} → Restaurant (404 throws)
+ * Fetches a single restaurant directly by ID.
  */
 export async function getRestaurant(restaurantId: string): Promise<Restaurant | null> {
-  const restaurants = await apiFetch<Restaurant[]>("/api/restaurants");
-  return restaurants.find((r) => r.id === restaurantId) ?? null;
+  try {
+    return await apiFetch<Restaurant>(`/api/restaurants/${encodeURIComponent(restaurantId)}`);
+  } catch (err) {
+    // 404 means not found — return null so callers can handle gracefully
+    if (err instanceof Error && err.message.includes("404")) return null;
+    throw err;
+  }
 }
 
 /** GET /api/restaurants/{restaurantId}/menu → MenuItem[] */
