@@ -13,6 +13,7 @@ interface StoredSession {
   display_name: string;
   participant_id: string;
   restaurant_id: string;
+  invite_link?: string;
   is_solo?: boolean;
 }
 
@@ -110,7 +111,7 @@ export default function RestaurantPageClient({
     if (!pendingItem) return;
     setIsCreating(true);
     try {
-      const { session_id } = await createSession(restaurant.id);
+      const { session_id, invite_link } = await createSession(restaurant.id);
       const participant_id = generateUUID();
       const soloName = "Me";
 
@@ -119,6 +120,7 @@ export default function RestaurantPageClient({
         display_name: soloName,
         participant_id,
         restaurant_id: restaurant.id,
+        invite_link,
         is_solo: true,
       };
 
@@ -153,7 +155,7 @@ export default function RestaurantPageClient({
     setIsCreating(true);
 
     try {
-      const { session_id } = await createSession(restaurant.id);
+      const { session_id, invite_link } = await createSession(restaurant.id);
       const participant_id = generateUUID();
 
       const session: StoredSession = {
@@ -161,6 +163,7 @@ export default function RestaurantPageClient({
         display_name: trimmedName,
         participant_id,
         restaurant_id: restaurant.id,
+        invite_link,
         is_solo: false,
       };
 

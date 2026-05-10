@@ -67,7 +67,7 @@ export function EtaCountdown({ etaMinutes, startedAt }: EtaCountdownProps) {
           aria-hidden="true"
         />
         <span className="text-sm font-semibold text-white">
-          🍽️ Preparation should begin now!
+          🍽️ Your food should be ready now — enjoy!
         </span>
       </div>
     );
@@ -80,7 +80,7 @@ export function EtaCountdown({ etaMinutes, startedAt }: EtaCountdownProps) {
       role="status"
       aria-live="polite"
     >
-      <span className="text-sm text-white/70">Food preparation begins in</span>
+      <span className="text-sm text-white/70">Your food will be ready when you arrive in</span>
       <motion.span className="text-sm font-bold text-accent-cyan tabular-nums">
         {displayMinutes}
       </motion.span>

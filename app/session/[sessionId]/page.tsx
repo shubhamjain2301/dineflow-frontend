@@ -27,6 +27,7 @@ interface StoredSession {
   display_name: string;
   participant_id: string;
   restaurant_id?: string;
+  invite_link?: string;
   is_solo?: boolean;
 }
 
@@ -186,6 +187,9 @@ export default function SessionPage() {
   const [displayName, setDisplayName] = useState<string>("");
   const [isSolo, setIsSolo] = useState(false);
   const [needsName, setNeedsName] = useState(false);
+  // Fallback restaurant_id and invite_link from localStorage (available before WS sync)
+  const [localRestaurantId, setLocalRestaurantId] = useState<string>("");
+  const [localInviteLink, setLocalInviteLink] = useState<string>("");
 
   useEffect(() => {
     const stored = readStoredSession();
@@ -195,6 +199,8 @@ export default function SessionPage() {
       setParticipantId(stored.participant_id);
       setDisplayName(stored.display_name);
       setIsSolo(stored.is_solo ?? false);
+      if (stored.restaurant_id) setLocalRestaurantId(stored.restaurant_id);
+      if (stored.invite_link) setLocalInviteLink(stored.invite_link);
     } else if (stored && stored.display_name) {
       // Joining via invite link — reuse name, fresh participant_id, never solo
       const newParticipantId = generateUUID();
@@ -203,12 +209,15 @@ export default function SessionPage() {
         display_name: stored.display_name,
         participant_id: newParticipantId,
         restaurant_id: stored.restaurant_id,
+        invite_link: stored.invite_link,
         is_solo: false,
       };
       writeStoredSession(updated);
       setParticipantId(newParticipantId);
       setDisplayName(stored.display_name);
       setIsSolo(false);
+      if (stored.restaurant_id) setLocalRestaurantId(stored.restaurant_id);
+      if (stored.invite_link) setLocalInviteLink(stored.invite_link);
     } else {
       // No stored name — prompt (invite link with no prior session)
       const newParticipantId = generateUUID();
@@ -256,6 +265,10 @@ export default function SessionPage() {
     displayName: ready ? displayName : "",
   });
 
+  // Merge WS sync data with local fallbacks
+  const effectiveRestaurantId = restaurantId || localRestaurantId;
+  const effectiveInviteLink = inviteLink || localInviteLink;
+
   // ── Session-not-found detection ──────────────────────────────────────────
   // Only redirect when the server explicitly closes with code 4004.
   // Normal disconnects (network hiccup, Render cold start) should just reconnect.
@@ -278,16 +291,16 @@ export default function SessionPage() {
   const fetchedRestaurantId = useRef<string>("");
 
   useEffect(() => {
-    if (!restaurantId || restaurantId === fetchedRestaurantId.current) return;
-    fetchedRestaurantId.current = restaurantId;
+    if (!effectiveRestaurantId || effectiveRestaurantId === fetchedRestaurantId.current) return;
+    fetchedRestaurantId.current = effectiveRestaurantId;
 
-    getMenu(restaurantId)
+    getMenu(effectiveRestaurantId)
       .then(setMenuItems)
       .catch((err: unknown) => {
         const message = err instanceof Error ? err.message : "Failed to load menu.";
         toast.error(message);
       });
-  }, [restaurantId]);
+  }, [effectiveRestaurantId]);
 
   // ── Order confirmation ───────────────────────────────────────────────────
   const [orderConfirmed, setOrderConfirmed] = useState(false);
@@ -300,7 +313,7 @@ export default function SessionPage() {
     try {
       await confirmOrder({
         session_id: sessionId,
-        restaurant_id: restaurantId,
+        restaurant_id: effectiveRestaurantId,
         eta_minutes: etaMinutes,
         items: cart.map((item) => ({
           menu_item_id: item.menu_item_id,
@@ -319,7 +332,7 @@ export default function SessionPage() {
     } finally {
       setIsConfirming(false);
     }
-  }, [isConfirming, sessionId, restaurantId, etaMinutes, cart]);
+  }, [isConfirming, sessionId, effectiveRestaurantId, etaMinutes, cart]);
 
   // ── Pending item from restaurant page ────────────────────────────────────
   // Consume immediately on mount — addItem queues internally if WS not ready yet.
@@ -476,12 +489,12 @@ export default function SessionPage() {
               />
             </section>
 
-            {inviteLink && (
+            {effectiveInviteLink && (
               <section className="rounded-2xl border border-base-border bg-base-surface/60 p-4 backdrop-blur-md shadow-lg shadow-black/30">
                 <h2 className="mb-3 text-sm font-semibold text-white/70 uppercase tracking-wide">
                   Invite Link
                 </h2>
-                <InviteLink inviteLink={inviteLink} />
+                <InviteLink inviteLink={effectiveInviteLink} />
               </section>
             )}
 
