@@ -25,13 +25,14 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
     restaurant = restaurantData ?? undefined;
     menuItems = items;
   } catch (err) {
-    // If the fetch returns a 404-style error, show the Next.js not-found page
+    // Only treat genuine 404s as not-found — let other errors surface
     const message = err instanceof Error ? err.message : "";
     if (message.includes("404") || message.toLowerCase().includes("not found")) {
       notFound();
     }
-    // For other errors, also treat as not found
-    notFound();
+    // For network/server errors, show a fallback rather than a blank 404
+    // The page will render with empty state
+    menuItems = [];
   }
 
   // Restaurant not found — show the Next.js not-found page

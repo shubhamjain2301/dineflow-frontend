@@ -5,7 +5,12 @@ import type {
   OrderStatus,
 } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Server-side: use BACKEND_URL (not exposed to browser, used by Vercel SSR)
+// Client-side: use NEXT_PUBLIC_API_URL (baked into the browser bundle)
+const API_URL =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8000";
 
 /**
  * Shared fetch helper. Throws an Error with the backend `detail` message
