@@ -3,7 +3,7 @@ import { getMenu, getRestaurant } from "@/lib/api";
 import PrepTimeIndicator from "@/components/restaurant/PrepTimeIndicator";
 import RestaurantPageClient from "./RestaurantPageClient";
 import PageTransition from "@/components/ui/PageTransition";
-import type { Restaurant } from "@/lib/types";
+import type { Restaurant, MenuItem } from "@/lib/types";
 
 interface RestaurantPageProps {
   params: Promise<{ restaurantId: string }>;
@@ -14,7 +14,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
 
   // Fetch restaurant details and menu items in parallel
   let restaurant: Restaurant | undefined;
-  let menuItems;
+  let menuItems: MenuItem[] = [];
 
   try {
     const [restaurantData, items] = await Promise.all([
@@ -68,7 +68,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
         {/* Menu + client-side cart logic */}
         <div className="max-w-6xl mx-auto px-4 py-10">
           <h2 className="text-xl font-semibold text-white/80 mb-8">Menu</h2>
-          <RestaurantPageClient restaurant={restaurant} menuItems={menuItems ?? []} />
+          <RestaurantPageClient restaurant={restaurant} menuItems={menuItems} />
         </div>
       </main>
     </PageTransition>
